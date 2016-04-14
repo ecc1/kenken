@@ -27,6 +27,9 @@ kinds="4x4Easy 4x4Medium 6x6Easy 6x6Medium 6x6Hard 8x8Hard"
 
 for k in $kinds; do
     file="NYTimes$k$month_day.txt"
-    url="$base_url/$year/$month/$file"
-    wget "$url" && kenken "$file"
+    if [ ! -f "$file" ]; then
+	url="$base_url/$year/$month/$file"
+	wget --quiet "$url"
+    fi
+    kenken "$file"
 done
