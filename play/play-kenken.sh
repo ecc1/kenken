@@ -29,6 +29,7 @@ for k in $kinds; do
     file="NYTimes$k$month_day.txt"
     if [ ! -f "$file" ]; then
 	url="$base_url/$year/$month/$file"
+	echo "[downloading $url]"
 	wget --quiet "$url"
     fi
     kenken "$file"
