@@ -7,10 +7,10 @@ import (
 )
 
 var game struct {
-	k         *kenken.KenKen
-	size      int
-	cell      [][]int
-	note      [][][]bool
+	k    *kenken.KenKen
+	size int
+	cell [][]int
+	note [][][]bool
 }
 
 var (
@@ -96,7 +96,7 @@ func removeOtherNotes(x, y, n int) {
 	}
 }
 
-// For simplicity tHis can be called on constant cells too.
+// For simplicity this can be called on constant cells too.
 func removeNote(x, y, n int) {
 	if !isConstant(x, y) {
 		game.note[y][x][n-1] = false
