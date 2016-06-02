@@ -19,7 +19,6 @@ esac
 
 cd /tmp
 
-year=$(date --date "$date" +'%Y')
 month=$(date --date "$date" +'%b')
 month_day=$(date --date "$date" +'%b00%d')
 
@@ -28,7 +27,7 @@ kinds="4x4Easy 4x4Medium 6x6Easy 6x6Medium 6x6Hard 8x8Hard"
 for k in $kinds; do
     file="NYTimes$k$month_day.txt"
     if [ ! -f "$file" ]; then
-	url="$base_url/$year/$month/$file"
+	url="$base_url/$month/$file"
 	echo "[downloading $url]"
 	wget --quiet "$url"
     fi
