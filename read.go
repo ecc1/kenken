@@ -157,7 +157,7 @@ func opMatrix(s *bufio.Scanner, label string) [][]Operation {
 
 func ReadPuzzle() (*KenKen, string) {
 	if len(os.Args) != 2 {
-		log.Fatalf("Usage: %s file\n", os.Args[0])
+		log.Fatalf("Usage: %s file", os.Args[0])
 	}
 	filename := os.Args[1]
 	f, err := os.Open(filename)
