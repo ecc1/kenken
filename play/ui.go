@@ -136,7 +136,13 @@ func drawCages() {
 	}
 }
 
+var winning = false
+
 func winnerWinner() {
+	if winning {
+		return
+	}
+	winning = true
 	dialog := gtk.NewDialog()
 	dialog.SetSizeRequest(200, 50)
 	dialog.SetTitle("Congratulations!")
