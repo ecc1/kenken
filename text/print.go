@@ -1,11 +1,13 @@
-package kenken
+package text
 
 import (
 	"fmt"
 	"io"
+
+	"github.com/ecc1/kenken"
 )
 
-func (k *Puzzle) PrintAnswer(w io.Writer) {
+func PrintAnswer(k *kenken.Puzzle, w io.Writer) {
 	size := k.Size()
 
 	// Top border
@@ -28,7 +30,7 @@ func (k *Puzzle) PrintAnswer(w io.Writer) {
 				fmt.Fprint(w, "┃   ")
 			}
 			for x := 1; x < size; x++ {
-				fmt.Fprint(w, k.answerCrossing(x, y))
+				fmt.Fprint(w, answerCrossing(k, x, y))
 			}
 			if k.Horizontal[size-1][y-1] {
 				fmt.Fprint(w, "┫\n")
@@ -64,7 +66,7 @@ func (k *Puzzle) PrintAnswer(w io.Writer) {
 	fmt.Fprint(w, "┛\n")
 }
 
-func (k *Puzzle) crossingIndex(x, y int) int {
+func crossingIndex(k *kenken.Puzzle, x, y int) int {
 	index := 0
 	if k.Horizontal[x-1][y-1] {
 		index |= 1 << 0
@@ -86,8 +88,8 @@ var crossing0 = []string{
 	"╻", "┓", "┏", "┳", "┃", "┫", "┣", "╋",
 }
 
-func (k *Puzzle) answerCrossing(x, y int) string {
-	c := crossing0[k.crossingIndex(x, y)]
+func answerCrossing(k *kenken.Puzzle, x, y int) string {
+	c := crossing0[crossingIndex(k, x, y)]
 	if k.Horizontal[x][y-1] {
 		return fmt.Sprintf("%s━━━", c)
 	} else {
@@ -95,7 +97,7 @@ func (k *Puzzle) answerCrossing(x, y int) string {
 	}
 }
 
-func (k *Puzzle) PrintPuzzle(w io.Writer) {
+func PrintPuzzle(k *kenken.Puzzle, w io.Writer) {
 	size := len(k.Answer)
 
 	// Top border
@@ -118,7 +120,7 @@ func (k *Puzzle) PrintPuzzle(w io.Writer) {
 				fmt.Fprint(w, "┠───────")
 			}
 			for x := 1; x < size; x++ {
-				fmt.Fprint(w, k.puzzleCrossing(x, y))
+				fmt.Fprint(w, puzzleCrossing(k, x, y))
 			}
 			if k.Horizontal[size-1][y-1] {
 				fmt.Fprint(w, "┫\n")
@@ -135,7 +137,7 @@ func (k *Puzzle) PrintPuzzle(w io.Writer) {
 				fmt.Fprint(w, "│")
 			}
 			switch k.Operation[y][x] {
-			case None, Given:
+			case kenken.None, kenken.Given:
 				fmt.Fprint(w, "       ")
 			default:
 				fmt.Fprintf(w, "%-7s", clueString(k.Clue[y][x], k.Operation[y][x]))
@@ -154,7 +156,7 @@ func (k *Puzzle) PrintPuzzle(w io.Writer) {
 				}
 			}
 			switch k.Operation[y][x] {
-			case Given:
+			case kenken.Given:
 				fmt.Fprintf(w, "   %d   ", k.Answer[y][x])
 			default:
 				fmt.Fprint(w, "       ")
@@ -189,8 +191,8 @@ var crossing1 = []string{
 	"╁", "╅", "╆", "╈", "╂", "╉", "╊", "╋",
 }
 
-func (k *Puzzle) puzzleCrossing(x, y int) string {
-	c := crossing1[k.crossingIndex(x, y)]
+func puzzleCrossing(k *kenken.Puzzle, x, y int) string {
+	c := crossing1[crossingIndex(k, x, y)]
 	if k.Horizontal[x][y-1] {
 		return fmt.Sprintf("%s━━━━━━━", c)
 	} else {
@@ -198,6 +200,6 @@ func (k *Puzzle) puzzleCrossing(x, y int) string {
 	}
 }
 
-func clueString(clue int, op Operation) string {
+func clueString(clue int, op kenken.Operation) string {
 	return fmt.Sprintf("%d%s", clue, op.Symbol())
 }
