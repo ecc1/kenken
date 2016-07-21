@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/ecc1/kenken"
 	"github.com/mattn/go-gtk/gdk"
@@ -14,13 +15,13 @@ const (
 )
 
 func main() {
-	k := kenken.ReadPuzzle()
+	k, path := kenken.ReadPuzzle()
 	size := k.Size()
 
 	gtk.Init(nil)
 
 	window := gtk.NewWindow(gtk.WINDOW_TOPLEVEL)
-	window.SetTitle(fmt.Sprintf("%d×%d KenKen", size, size))
+	window.SetTitle(fmt.Sprintf("KenKen %s", filepath.Base(path)))
 	window.Connect("destroy", gtk.MainQuit)
 	window.SetResizable(false)
 
