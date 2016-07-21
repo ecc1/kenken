@@ -4,9 +4,10 @@ import (
 	"os"
 
 	"github.com/ecc1/kenken"
+	"github.com/ecc1/kenken/text"
 )
 
 func main() {
 	k, _ := kenken.ReadPuzzle()
-	k.PrintAnswer(os.Stdout)
+	text.PrintAnswer(k, os.Stdout)
 }
