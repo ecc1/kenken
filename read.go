@@ -12,11 +12,11 @@ import (
 
 var malformed = fmt.Errorf("malformed KenKen file")
 
-func Read(r io.Reader) (*KenKen, error) {
+func Read(r io.Reader) (*Puzzle, error) {
 	s := bufio.NewScanner(r)
 
 	// A section
-	k := new(KenKen)
+	k := new(Puzzle)
 	k.Answer = intMatrix(s, "A")
 	if k.Answer == nil {
 		return nil, malformed
@@ -155,7 +155,7 @@ func opMatrix(s *bufio.Scanner, label string) [][]Operation {
 	return a
 }
 
-func ReadPuzzle() (*KenKen, string) {
+func ReadPuzzle() (*Puzzle, string) {
 	if len(os.Args) != 2 {
 		log.Fatalf("Usage: %s file", os.Args[0])
 	}

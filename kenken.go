@@ -4,7 +4,7 @@ in the format used by http://app.kenkenpuzzle.com/kenken/puzzles/
 */
 package kenken
 
-type KenKen struct {
+type Puzzle struct {
 	Answer    [][]int
 	Clue      [][]int
 	Operation [][]Operation
@@ -31,7 +31,7 @@ const (
 	Quotient
 )
 
-func (k *KenKen) Size() int {
+func (k *Puzzle) Size() int {
 	return len(k.Answer)
 }
 

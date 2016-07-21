@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-func (k *KenKen) PrintAnswer(w io.Writer) {
+func (k *Puzzle) PrintAnswer(w io.Writer) {
 	size := k.Size()
 
 	// Top border
@@ -64,7 +64,7 @@ func (k *KenKen) PrintAnswer(w io.Writer) {
 	fmt.Fprint(w, "┛\n")
 }
 
-func (k *KenKen) crossingIndex(x, y int) int {
+func (k *Puzzle) crossingIndex(x, y int) int {
 	index := 0
 	if k.Horizontal[x-1][y-1] {
 		index |= 1 << 0
@@ -86,7 +86,7 @@ var crossing0 = []string{
 	"╻", "┓", "┏", "┳", "┃", "┫", "┣", "╋",
 }
 
-func (k *KenKen) answerCrossing(x, y int) string {
+func (k *Puzzle) answerCrossing(x, y int) string {
 	c := crossing0[k.crossingIndex(x, y)]
 	if k.Horizontal[x][y-1] {
 		return fmt.Sprintf("%s━━━", c)
@@ -95,7 +95,7 @@ func (k *KenKen) answerCrossing(x, y int) string {
 	}
 }
 
-func (k *KenKen) PrintPuzzle(w io.Writer) {
+func (k *Puzzle) PrintPuzzle(w io.Writer) {
 	size := len(k.Answer)
 
 	// Top border
@@ -189,7 +189,7 @@ var crossing1 = []string{
 	"╁", "╅", "╆", "╈", "╂", "╉", "╊", "╋",
 }
 
-func (k *KenKen) puzzleCrossing(x, y int) string {
+func (k *Puzzle) puzzleCrossing(x, y int) string {
 	c := crossing1[k.crossingIndex(x, y)]
 	if k.Horizontal[x][y-1] {
 		return fmt.Sprintf("%s━━━━━━━", c)

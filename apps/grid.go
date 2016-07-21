@@ -77,7 +77,7 @@ func main() {
 
 var white = gdk.NewColor("white")
 
-func drawCages(k *kenken.KenKen, d *gdk.Drawable, a *gtk.Allocation) {
+func drawCages(k *kenken.Puzzle, d *gdk.Drawable, a *gtk.Allocation) {
 	size := k.Size()
 	w := a.Width / size
 	h := a.Height / size

@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	puzzle *kenken.KenKen
+	puzzle *kenken.Puzzle
 	path   string
 )
 
