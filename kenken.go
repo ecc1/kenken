@@ -10,13 +10,13 @@ type Puzzle struct {
 	Operation [][]Operation
 
 	// N rows of N-1 columns
-	// Vertical[y][x-1] == true means there is a heavy vertical line
-	// between (x-1, y) and (x, y)
+	// Vertical[y][x] is true if there is a heavy vertical line
+	// between (x, y) and (x+1, y)
 	Vertical [][]bool
 
 	// N rows of N-1 columns
-	// Horizontal[x][y-1] == true means there is a heavy horizontal line
-	// between (x, y-1) and (x, y) (note transpose)
+	// Horizontal[x][y] is true if there is a heavy horizontal line
+	// between (x, y) and (x, y+1) (note transpose)
 	Horizontal [][]bool
 }
 
