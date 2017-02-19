@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"log"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -14,38 +12,15 @@ var malformed = fmt.Errorf("malformed KenKen file")
 
 func Read(r io.Reader) (*Puzzle, error) {
 	s := bufio.NewScanner(r)
-
-	// A section
 	k := new(Puzzle)
 	k.Answer = intMatrix(s, "A")
-	if k.Answer == nil {
-		return nil, malformed
-	}
-
-	// T section
 	k.Clue = intMatrix(s, "T")
-	if k.Clue == nil {
-		return nil, malformed
-	}
-
-	// S section
 	k.Operation = opMatrix(s, "S")
-	if k.Operation == nil {
-		return nil, malformed
-	}
-
-	// V section
 	k.Vertical = boolMatrix(s, "V")
-	if k.Vertical == nil {
-		return nil, malformed
-	}
-
-	// H section
 	k.Horizontal = boolMatrix(s, "H")
-	if k.Horizontal == nil {
+	if k.Answer == nil || k.Clue == nil || k.Operation == nil || k.Vertical == nil || k.Horizontal == nil {
 		return nil, malformed
 	}
-
 	return k, nil
 }
 
@@ -153,21 +128,4 @@ func opMatrix(s *bufio.Scanner, label string) [][]Operation {
 		}
 	}
 	return a
-}
-
-func ReadPuzzle() (*Puzzle, string) {
-	if len(os.Args) != 2 {
-		log.Fatalf("Usage: %s file", os.Args[0])
-	}
-	filename := os.Args[1]
-	f, err := os.Open(filename)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	k, err := Read(f)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return k, filename
 }
