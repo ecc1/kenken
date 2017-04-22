@@ -143,11 +143,10 @@ func winnerWinner() {
 		return
 	}
 	winning = true
-	dialog := gtk.NewDialog()
-	dialog.SetSizeRequest(200, 50)
-	dialog.SetTitle("Congratulations!")
-	button := gtk.NewButtonWithLabel("Done")
-	button.Connect("clicked", gtk.MainQuit)
-	dialog.GetVBox().Add(button)
-	dialog.ShowAll()
+	dialog := gtk.NewMessageDialogWithMarkup(
+		table.GetTopLevelAsWindow(), gtk.DIALOG_MODAL,
+		gtk.MESSAGE_INFO, gtk.BUTTONS_OK, "<b>Correct!</b>",
+	)
+	dialog.Response(gtk.MainQuit)
+	dialog.Run()
 }
