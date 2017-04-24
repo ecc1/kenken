@@ -6,14 +6,14 @@ import (
 	"github.com/ecc1/kenken"
 )
 
-var game struct {
-	k    *kenken.Puzzle
-	size int
-	cell [][]int
-	note [][][]bool
-}
-
 var (
+	game struct {
+		k    *kenken.Puzzle
+		size int
+		cell [][]int
+		note [][][]bool
+	}
+
 	autoPromote = true
 )
 
@@ -68,8 +68,13 @@ func updateCell(x, y, n int) {
 	setCellLabel(x, y, n)
 	clearNotes(x, y)
 	removeOtherNotes(x, y, n)
-	if isSolved() {
-		winnerWinner()
+	done, correct := gameStatus()
+	if done {
+		if correct {
+			winnerWinner()
+		} else {
+			tryAgain()
+		}
 	}
 }
 
@@ -143,13 +148,28 @@ func updateNoteLabel(x, y int, promote bool) {
 	}
 }
 
-func isSolved() bool {
+func gameStatus() (complete bool, correct bool) {
+	correct = true
 	for j := 0; j < game.size; j++ {
 		for i := 0; i < game.size; i++ {
+			if game.cell[j][i] == 0 {
+				return
+			}
 			if game.cell[j][i] != puzzle.Answer[j][i] {
-				return false
+				correct = false
 			}
 		}
 	}
-	return true
+	complete = true
+	return
+}
+
+func restartGame() {
+	for y := 0; y < game.size; y++ {
+		for x := 0; x < game.size; x++ {
+			if !isConstant(x, y) {
+				clearAll(x, y)
+			}
+		}
+	}
 }

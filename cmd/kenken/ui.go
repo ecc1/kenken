@@ -150,3 +150,21 @@ func winnerWinner() {
 	dialog.Response(gtk.MainQuit)
 	dialog.Run()
 }
+
+var losing = false
+
+func tryAgain() {
+	if losing {
+		return
+	}
+	losing = true
+	dialog := gtk.NewMessageDialogWithMarkup(
+		table.GetTopLevelAsWindow(), gtk.DIALOG_MODAL,
+		gtk.MESSAGE_WARNING, gtk.BUTTONS_YES_NO, "<b>Incorrect. Retry?</b>",
+	)
+	if dialog.Run() == gtk.RESPONSE_YES {
+		restartGame()
+	}
+	dialog.Destroy()
+	losing = false
+}
