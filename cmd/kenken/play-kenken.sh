@@ -29,7 +29,7 @@ for k in $kinds; do
     if [ ! -f "$file" ]; then
 	url="$base_url/$month/$file"
 	echo "[downloading $url]"
-	wget --quiet "$url"
+	wget --quiet "$url" >/dev/null 2>&1
     fi
     kenken "$file"
 done
