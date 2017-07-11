@@ -4,6 +4,7 @@ in the format used by http://app.kenkenpuzzle.com/kenken/puzzles/
 */
 package kenken
 
+// Puzzle represents a KenKen puzzle.
 type Puzzle struct {
 	Answer    [][]int
 	Clue      [][]int
@@ -20,8 +21,10 @@ type Puzzle struct {
 	Horizontal [][]bool
 }
 
+// Operation represents an arithmetic operation for a cage.
 type Operation byte
 
+// Cage operations.
 const (
 	None Operation = iota
 	Given
@@ -31,12 +34,14 @@ const (
 	Quotient
 )
 
+// Size returns the puzzle size.
 func (k *Puzzle) Size() int {
 	return len(k.Answer)
 }
 
 var ops = []string{"?", "?", "+", "−", "×", "∕"}
 
+// Symbol returns the character corresponding to an operation.
 func (op Operation) Symbol() string {
 	return ops[op]
 }

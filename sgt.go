@@ -19,10 +19,11 @@ func debug(format string, args ...interface{}) {
 	fmt.Printf(format, args...)
 }
 
+// ReadSGT constructs a puzzle from the given SGT puzzle id and solution strings.
 func ReadSGT(id string, soln string) (*Puzzle, error) {
 	if id[0] < '0' || id[0] > '9' || id[1] != ':' {
 		log.Printf("expected size and colon here: %s", id)
-		return nil, malformed
+		return nil, errMalformed
 	}
 	size := int(id[0] - '0')
 	k := &Puzzle{
@@ -36,7 +37,7 @@ func ReadSGT(id string, soln string) (*Puzzle, error) {
 	debug("%s\n", s)
 	i := readSGTLines(s, k)
 	if i < 0 {
-		return nil, malformed
+		return nil, errMalformed
 	}
 	err := readSGTClues(s[i:], k)
 	if err != nil {
@@ -51,14 +52,13 @@ func ReadSGT(id string, soln string) (*Puzzle, error) {
 func readSGTLines(s string, k *Puzzle) int {
 	size := k.Size()
 	pos := 0
-	middle := size * (size - 1)
-	end := 2 * middle
+	end := 2 * size * (size - 1)
 	i := 0
 	for i < len(s) {
 		c := s[i]
 		i++
 		if c == '_' {
-			pos += 1
+			pos++
 		} else if 'a' <= c && c <= 'z' {
 			pos += int(c-'a') + 2
 		} else {
@@ -68,31 +68,7 @@ func readSGTLines(s string, k *Puzzle) int {
 		if pos > end {
 			break
 		}
-		x := pos % (size - 1)
-		y := pos / (size - 1)
-		if x == 0 {
-			x = size - 1
-			y -= 1
-		}
-		if pos >= middle && y != size-1 {
-			y -= size
-		}
-		debug("pos %2d -> (%d,%d)\n", pos, y, x)
-		var edges [][]bool
-		if pos <= middle {
-			edges = k.Vertical
-			debug("                 V")
-		} else {
-			edges = k.Horizontal
-			debug("                 H")
-		}
-		if x > 0 {
-			debug("(%d,%d)\n", y, x-1)
-			edges[y][x-1] = true
-		} else {
-			debug("(%d,%d)\n", y-1, size-2)
-			edges[y-1][size-2] = true
-		}
+		addSGTLine(pos, k)
 	}
 	if s[i] != ',' {
 		log.Printf("expected comma here: %s", s[i:])
@@ -101,26 +77,43 @@ func readSGTLines(s string, k *Puzzle) int {
 	return i + 1
 }
 
+func addSGTLine(pos int, k *Puzzle) {
+	size := k.Size()
+	middle := size * (size - 1)
+	x := pos % (size - 1)
+	y := pos / (size - 1)
+	if x == 0 {
+		x = size - 1
+		y--
+	}
+	if pos >= middle && y != size-1 {
+		y -= size
+	}
+	debug("pos %2d -> (%d,%d)\n", pos, y, x)
+	var edges [][]bool
+	if pos <= middle {
+		edges = k.Vertical
+		debug("                 V")
+	} else {
+		edges = k.Horizontal
+		debug("                 H")
+	}
+	if x > 0 {
+		debug("(%d,%d)\n", y, x-1)
+		edges[y][x-1] = true
+	} else {
+		debug("(%d,%d)\n", y-1, size-2)
+		edges[y-1][size-2] = true
+	}
+}
+
 // Read the second half of the string to set the Clue and Operation matrices.
 func readSGTClues(s string, k *Puzzle) error {
 	size := k.Size()
 	x, y := 0, 0
 	i := 0
 	for i < len(s) {
-		var op Operation
-		switch s[i] {
-		case 'a':
-			op = Sum
-		case 's':
-			op = Difference
-		case 'm':
-			op = Product
-		case 'd':
-			op = Quotient
-		default:
-			log.Printf("unexpected operation here: %s", s[i:])
-			return malformed
-		}
+		op := parseSGTOperation(s[i])
 		i++
 		clue := 0
 		for i < len(s) {
@@ -142,9 +135,23 @@ func readSGTClues(s string, k *Puzzle) error {
 	}
 	if i != len(s) {
 		log.Printf("clues remaining: %s", s[i:])
-		return malformed
+		return errMalformed
 	}
 	return nil
+}
+
+func parseSGTOperation(c byte) Operation {
+	switch c {
+	case 'a':
+		return Sum
+	case 's':
+		return Difference
+	case 'm':
+		return Product
+	case 'd':
+		return Quotient
+	}
+	panic(fmt.Sprintf("unexpected operation (%c)", c))
 }
 
 // Find coordinates of the next clue, which must be the
@@ -166,37 +173,50 @@ func nextClue(k *Puzzle, x int, y int) (int, int) {
 				return x, y
 			}
 		}
-		debug("checking (%d,%d): ", y, x)
-		if x != 0 && !k.Vertical[y][x-1] {
-			debug("no line on left\n")
-			continue
-		}
-		if y != 0 && !k.Horizontal[x][y-1] {
-			debug("no line on top\n")
+		if !cageCorner(k, x, y) {
 			continue
 		}
 		if y == 0 || x == size-1 || k.Vertical[y][x] {
 			debug("yes\n")
 			return x, y
 		}
-		ok := true
-		for i := x + 1; i < size; i++ {
-			if !k.Horizontal[i][y-1] {
-				debug("no line on top of (%d,%d)\n", y, i)
-				ok = false
-				break
-			}
-			debug("line on top of (%d,%d) ", y, i)
-			if i == size-1 || k.Vertical[y][i] {
-				break
-			}
-		}
-		if !ok {
+		if !cageTop(k, x, y) {
 			continue
 		}
 		debug("yes\n")
 		return x, y
 	}
+}
+
+// cageCorner checks if a cell has heavy lines on its left and top edges.
+func cageCorner(k *Puzzle, x int, y int) bool {
+	debug("checking (%d,%d): ", y, x)
+	if x != 0 && !k.Vertical[y][x-1] {
+		debug("no line on left\n")
+		return false
+	}
+	if y != 0 && !k.Horizontal[x][y-1] {
+		debug("no line on top\n")
+		return false
+	}
+	return true
+}
+
+// cageTop checks if all cells extending to the next heavy line on the right
+// have heavy lines on their top edges.
+func cageTop(k *Puzzle, x int, y int) bool {
+	size := k.Size()
+	for i := x + 1; i < size; i++ {
+		if !k.Horizontal[i][y-1] {
+			debug("no line on top of (%d,%d)\n", y, i)
+			return false
+		}
+		debug("line on top of (%d,%d) ", y, i)
+		if i == size-1 || k.Vertical[y][i] {
+			return true
+		}
+	}
+	panic("unreachable")
 }
 
 // Make a bool matrix with N rows of N-1 columns.

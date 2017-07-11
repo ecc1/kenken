@@ -6,6 +6,8 @@ import (
 	"os"
 )
 
+// ReadPuzzle reads the file specified on the command line,
+// or generates an SGT Keen puzzle if none is given.
 func ReadPuzzle() (*Puzzle, string) {
 	var k *Puzzle
 	var name string
@@ -17,11 +19,12 @@ func ReadPuzzle() (*Puzzle, string) {
 		k, name, err = sgtPuzzle()
 	case 1:
 		name = args[0]
-		f, err := os.Open(name)
+		var f *os.File
+		f, err = os.Open(name)
 		if err != nil {
 			log.Fatal(err)
 		}
-		defer f.Close()
+		defer func() { _ = f.Close() }()
 		k, err = Read(f)
 	default:
 		log.Fatalf("Usage: %s [options] [file]", os.Args[0])

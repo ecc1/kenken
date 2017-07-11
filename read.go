@@ -8,8 +8,9 @@ import (
 	"strings"
 )
 
-var malformed = fmt.Errorf("malformed KenKen file")
+var errMalformed = fmt.Errorf("malformed KenKen file")
 
+// Read reads a puzzle from r.
 func Read(r io.Reader) (*Puzzle, error) {
 	s := bufio.NewScanner(r)
 	k := new(Puzzle)
@@ -19,7 +20,7 @@ func Read(r io.Reader) (*Puzzle, error) {
 	k.Vertical = boolMatrix(s, "V")
 	k.Horizontal = boolMatrix(s, "H")
 	if k.Answer == nil || k.Clue == nil || k.Operation == nil || k.Vertical == nil || k.Horizontal == nil {
-		return nil, malformed
+		return nil, errMalformed
 	}
 	return k, nil
 }
@@ -38,7 +39,7 @@ func readMatrix(s *bufio.Scanner, label string, square bool) [][]string {
 	}
 	nRows := nCols
 	if !square {
-		nRows += 1
+		nRows++
 	}
 	m := make([][]string, nRows)
 	m[0] = line
@@ -109,23 +110,27 @@ func opMatrix(s *bufio.Scanner, label string) [][]Operation {
 	for i, v := range m {
 		a[i] = make([]Operation, len(v))
 		for j, t := range v {
-			switch t {
-			case "0":
-				a[i][j] = None
-			case "1":
-				a[i][j] = Given
-			case "+":
-				a[i][j] = Sum
-			case "-":
-				a[i][j] = Difference
-			case "*":
-				a[i][j] = Product
-			case "/":
-				a[i][j] = Quotient
-			default:
-				return nil
-			}
+			a[i][j] = parseOperation(t)
 		}
 	}
 	return a
+}
+
+func parseOperation(s string) Operation {
+	switch s {
+	case "0":
+		return None
+	case "1":
+		return Given
+	case "+":
+		return Sum
+	case "-":
+		return Difference
+	case "*":
+		return Product
+	case "/":
+		return Quotient
+	default:
+		panic(fmt.Sprintf("unexpected operation (%s)", s))
+	}
 }
