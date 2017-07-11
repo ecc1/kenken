@@ -7,23 +7,27 @@ import (
 	"github.com/mattn/go-gtk/glib"
 )
 
-func ignore(_ *glib.CallbackContext) {
-}
-
-func click(x, y int) func(*glib.CallbackContext) {
-	if isConstant(x, y) {
-		return ignore
-	}
-	return func(_ *glib.CallbackContext) {
-		addNotes(x, y)
+func buttonpress(x, y int) func(*glib.CallbackContext) {
+	return func(ctx *glib.CallbackContext) {
+		arg := ctx.Args(0)
+		ev := *(**gdk.EventButton)(unsafe.Pointer(&arg))
+		switch ev.Button {
+		case 1: // left
+			if isConstant(x, y) {
+				return
+			}
+			addNotes(x, y)
+		case 3: // right
+			tryAgain()
+		}
 	}
 }
 
 func keypress(x, y int) func(*glib.CallbackContext) {
-	if isConstant(x, y) {
-		return ignore
-	}
 	return func(ctx *glib.CallbackContext) {
+		if isConstant(x, y) {
+			return
+		}
 		arg := ctx.Args(0)
 		ev := *(**gdk.EventKey)(unsafe.Pointer(&arg))
 		n := int(ev.Keyval) - '0'

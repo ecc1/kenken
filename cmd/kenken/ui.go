@@ -88,8 +88,8 @@ func attachCell(x, y int) {
 	button.Add(vbox)
 	button.Connect("enter-notify-event", func() { button.GrabFocus() })
 	button.Connect("expose-event", drawCages)
-	button.Connect("clicked", click(x, y))
 	button.Connect("key-press-event", keypress(x, y))
+	button.Connect("button-press-event", buttonpress(x, y))
 
 	table.AttachDefaults(button, uint(x), uint(x+1), uint(y), uint(y+1))
 }
@@ -160,7 +160,7 @@ func tryAgain() {
 	losing = true
 	dialog := gtk.NewMessageDialogWithMarkup(
 		table.GetTopLevelAsWindow(), gtk.DIALOG_MODAL,
-		gtk.MESSAGE_WARNING, gtk.BUTTONS_YES_NO, "<b>Incorrect. Retry?</b>",
+		gtk.MESSAGE_WARNING, gtk.BUTTONS_YES_NO, "<b>Try again?</b>",
 	)
 	if dialog.Run() == gtk.RESPONSE_YES {
 		restartGame()
