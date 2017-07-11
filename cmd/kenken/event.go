@@ -49,29 +49,24 @@ func keypress(x, y int) func(*glib.CallbackContext) {
 	}
 }
 
+var keycode = map[uint]int{
+	'!':            1,
+	'@':            2,
+	'#':            3,
+	'$':            4,
+	'%':            5,
+	'^':            6,
+	'&':            7,
+	'*':            8,
+	'(':            9,
+	' ':            0,
+	gdk.KEY_Delete: 0,
+}
+
 func decodeKey(c uint) int {
-	switch c {
-	case '!':
-		return 1
-	case '@':
-		return 2
-	case '#':
-		return 3
-	case '$':
-		return 4
-	case '%':
-		return 5
-	case '^':
-		return 6
-	case '&':
-		return 7
-	case '*':
-		return 8
-	case '(':
-		return 9
-	case ' ', gdk.KEY_Delete:
-		return 0
-	default:
+	n, known := keycode[c]
+	if !known {
 		return -1
 	}
+	return n
 }

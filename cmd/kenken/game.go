@@ -8,7 +8,6 @@ import (
 
 var (
 	game struct {
-		k    *kenken.Puzzle
 		size int
 		cell [][]int
 		note [][][]bool
