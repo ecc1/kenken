@@ -31,5 +31,5 @@ for k in $kinds; do
 	echo "[downloading $url]"
 	wget --quiet "$url" >/dev/null 2>&1
     fi
-    kenken "$file"
+    kenken "$file" && rm "$file"
 done
