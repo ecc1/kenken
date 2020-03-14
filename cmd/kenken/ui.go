@@ -31,8 +31,9 @@ func initUI() {
 	noteLabel = make([][]*gtk.Label, size)
 	window := gtk.NewWindow(gtk.WINDOW_TOPLEVEL)
 	window.SetTitle(fmt.Sprintf("KenKen %s", filepath.Base(path)))
-	window.Connect("destroy", gtk.MainQuit)
+	window.SetPosition(gtk.WIN_POS_CENTER_ALWAYS)
 	window.SetResizable(false)
+	window.Connect("destroy", gtk.MainQuit)
 	for y := 0; y < size; y++ {
 		cellLabel[y] = make([]*gtk.Label, size)
 		noteLabel[y] = make([]*gtk.Label, size)
@@ -86,7 +87,7 @@ func attachCell(x, y int) {
 		button.SetSensitive(false)
 	}
 	button.Add(vbox)
-	button.Connect("enter-notify-event", func() { button.GrabFocus() })
+	button.Connect("enter-notify-event", button.GrabFocus)
 	button.Connect("expose-event", drawCages)
 	button.Connect("key-press-event", keypress(x, y))
 	button.Connect("button-press-event", buttonpress(x, y))
