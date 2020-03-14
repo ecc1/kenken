@@ -318,7 +318,7 @@ func sgtPuzzle() (*Puzzle, string, error) {
 	}
 	soln, err := exec.Command(solvePuzzle, id).Output()
 	if err != nil {
-		return nil, id, err
+		return nil, id, fmt.Errorf("%s: %s", solvePuzzle, err)
 	}
 	k, err := ReadSGT(id, string(soln))
 	if err != nil {
@@ -347,5 +347,8 @@ func sgtPuzzleID() (string, error) {
 	}
 	// Generate a Keen puzzle.
 	result, err := exec.Command(genPuzzle, "--generate", "1", b.String()).Output()
-	return strings.TrimSpace(string(result)), err
+	if err != nil {
+		return "", fmt.Errorf("%s: %s", genPuzzle, err)
+	}
+	return strings.TrimSpace(string(result)), nil
 }
