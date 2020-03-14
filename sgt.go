@@ -325,7 +325,8 @@ func sgtPuzzle() (*Puzzle, string, error) {
 		log.Printf("puzzle encoding: %s", id)
 		log.Printf("puzzle solution:\n%s", soln)
 	}
-	return k, id, err
+	n := *sizeFlag
+	return k, fmt.Sprintf("%d × %d", n, n), err
 }
 
 func sgtPuzzleID() (string, error) {
