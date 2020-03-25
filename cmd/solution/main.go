@@ -2,105 +2,123 @@ package main
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/ecc1/kenken"
-	"github.com/mattn/go-gtk/gdk"
-	"github.com/mattn/go-gtk/gtk"
+	"github.com/gotk3/gotk3/cairo"
+	"github.com/gotk3/gotk3/gdk"
+	"github.com/gotk3/gotk3/gtk"
 )
 
 const (
-	cellSize      = 100
-	cageThickness = 4
+	textFont = "Sans"
+
+	// These are relative to a unit-square cell size.
+	lineWidth     = 0.025
+	innerSep      = 0.050
+	largeFontSize = 0.400
+	smallFontSize = 0.160
+)
+
+var (
+	puzzle   *kenken.Puzzle
+	size     int
+	cellSize float64
+	grid     *gtk.Grid
 )
 
 func main() {
-	k, path := kenken.ReadPuzzle()
-	size := k.Size()
-
+	var title string
+	puzzle, title = kenken.ReadPuzzle()
+	size = puzzle.Size()
 	gtk.Init(nil)
-
-	window := gtk.NewWindow(gtk.WINDOW_TOPLEVEL)
-	window.SetTitle(fmt.Sprintf("KenKen %s", filepath.Base(path)))
-	window.Connect("destroy", gtk.MainQuit)
-	window.SetResizable(false)
-
-	table := gtk.NewTable(uint(size), uint(size), true)
+	win, _ := gtk.WindowNew(gtk.WINDOW_TOPLEVEL)
+	win.SetTitle(fmt.Sprintf("KenKen %s", title))
+	setGeometry(win)
+	win.Connect("destroy", gtk.MainQuit)
+	win.Connect("size-allocate", resize)
+	grid, _ = gtk.GridNew()
 	for y := 0; y < size; y++ {
 		for x := 0; x < size; x++ {
-			vbox := gtk.NewVBox(false, 0)
-			vbox.SetSizeRequest(cellSize, cellSize)
-
-			// Clue, if any
-			str := ""
-			switch k.Operation[y][x] {
-			case kenken.None, kenken.Given:
-			default:
-				str = fmt.Sprintf("%d %s", k.Clue[y][x], k.Operation[y][x].Symbol())
-			}
-			label := gtk.NewLabel(str)
-			label.ModifyFontEasy("DejaVu Sans 12")
-			label.ModifyFG(gtk.STATE_INSENSITIVE, white)
-			align := gtk.NewAlignment(0, 0, 0, 0)
-			align.Add(label)
-			vbox.PackStart(align, false, false, 0)
-
-			// Notes
-			label = gtk.NewLabel("")
-			label.ModifyFontEasy("DejaVu Sans 12")
-			align = gtk.NewAlignment(1, 0, 0, 0)
-			align.Add(label)
-			vbox.PackEnd(align, false, false, 0)
-
-			// Cell contents
-			label = gtk.NewLabel(fmt.Sprintf("%d", k.Answer[y][x]))
-			label.ModifyFontEasy("DejaVu Sans 28")
-			label.ModifyFG(gtk.STATE_INSENSITIVE, white)
-			vbox.Add(label)
-
-			button := gtk.NewButton()
-			button.SetRelief(gtk.RELIEF_NONE)
-			button.SetSensitive(false)
-			button.Add(vbox)
-
-			table.AttachDefaults(button, uint(x), uint(x+1), uint(y), uint(y+1))
+			attachCell(x, y)
 		}
 	}
-	window.Add(table)
-	window.Connect("configure-event", func() {
-		drawCages(k, table.GetWindow().GetDrawable(), table.GetAllocation())
-	})
-	window.ShowAll()
-
+	win.Add(grid)
+	win.ShowAll()
 	gtk.Main()
 }
 
-var white = gdk.NewColor("white")
+func setGeometry(win *gtk.Window) {
+	d, _ := win.GetScreen().GetDisplay()
+	m, _ := d.GetPrimaryMonitor()
+	r := m.GetGeometry()
+	sz := size * min(r.GetWidth(), r.GetHeight()) / 10
+	win.SetDefaultSize(sz, sz)
+	var g gdk.Geometry
+	g.SetMinAspect(1)
+	g.SetMaxAspect(1)
+	win.SetGeometryHints(nil, g, gdk.HINT_ASPECT)
+	win.SetPosition(gtk.WIN_POS_CENTER_ALWAYS)
+}
 
-func drawCages(k *kenken.Puzzle, d *gdk.Drawable, a *gtk.Allocation) {
-	size := k.Size()
-	w := a.Width / size
-	h := a.Height / size
-	gc := gdk.NewGC(d)
-	gc.SetRgbFgColor(white)
-
-	t := cageThickness
-
-	d.DrawRectangle(gc, true, 0, 0, t, a.Height)
-	d.DrawRectangle(gc, true, 0, 0, a.Width, t)
-	d.DrawRectangle(gc, true, 0, a.Height-t, a.Width, t)
-	d.DrawRectangle(gc, true, a.Width-t, 0, t, a.Height)
-
-	for j := 0; j < size; j++ {
-		y := j*h - t/2
-		for i := 0; i < size; i++ {
-			x := i*w - t/2
-			if i > 0 && k.Vertical[j][i-1] {
-				d.DrawRectangle(gc, true, x, y, t, h+t/2)
-			}
-			if j > 0 && k.Horizontal[i][j-1] {
-				d.DrawRectangle(gc, true, x, y, w+t/2, t)
-			}
-		}
+func min(i, j int) int {
+	if i < j {
+		return i
 	}
+	return j
+}
+
+func attachCell(x int, y int) {
+	d, _ := gtk.DrawingAreaNew()
+	d.SetHExpand(true)
+	d.SetVExpand(true)
+	d.Connect("draw", func(d *gtk.DrawingArea, c *cairo.Context) { drawCell(x, y, d, c) })
+	grid.Attach(d, x+1, y+1, 1, 1)
+}
+
+func drawCell(x int, y int, d *gtk.DrawingArea, c *cairo.Context) {
+	sc, _ := d.GetStyleContext()
+	cv := sc.GetColor(gtk.STATE_FLAG_NORMAL).Floats()
+	c.SetSourceRGBA(cv[0], cv[1], cv[2], cv[3])
+	// Transform cell to unit square.
+	c.Scale(cellSize, cellSize)
+	// Cage lines.
+	c.SetLineWidth(lineWidth)
+	if x == 0 || puzzle.Vertical[y][x-1] {
+		c.MoveTo(0, 0)
+		c.LineTo(0, 1)
+	}
+	if x == size-1 {
+		c.MoveTo(1, 0)
+		c.LineTo(1, 1)
+	}
+	if y == 0 || puzzle.Horizontal[x][y-1] {
+		c.MoveTo(0, 0)
+		c.LineTo(1, 0)
+	}
+	if y == size-1 {
+		c.MoveTo(0, 1)
+		c.LineTo(1, 1)
+	}
+	c.Stroke()
+	c.SelectFontFace(textFont, cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+	c.SetFontSize(largeFontSize)
+	num := fmt.Sprintf("%d", puzzle.Answer[y][x])
+	t := c.TextExtents(num)
+	c.MoveTo(0.5-t.Width/2, 0.5+t.Height/2)
+	c.ShowText(num)
+	op := puzzle.Operation[y][x]
+	switch op {
+	case kenken.None, kenken.Given:
+		return
+	}
+	c.SetFontSize(smallFontSize)
+	clue := fmt.Sprintf("%d %s", puzzle.Clue[y][x], op.Symbol())
+	t = c.TextExtents(clue)
+	c.MoveTo(innerSep, innerSep+t.Height)
+	c.ShowText(clue)
+}
+
+func resize(arg interface{}) {
+	a := grid.GetAllocation()
+	cellSize = float64(a.GetWidth()) / float64(puzzle.Size())
 }

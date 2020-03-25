@@ -6,11 +6,11 @@ import (
 
 var (
 	puzzle *kenken.Puzzle
-	path   string
+	title  string
 )
 
 func main() {
-	puzzle, path = kenken.ReadPuzzle()
+	puzzle, title = kenken.ReadPuzzle()
 	initGame()
 	initUI()
 	runUI()

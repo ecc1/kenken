@@ -1,72 +1,63 @@
 package main
 
 import (
-	"unsafe"
-
-	"github.com/mattn/go-gtk/gdk"
-	"github.com/mattn/go-gtk/glib"
+	"github.com/gotk3/gotk3/gdk"
+	"github.com/gotk3/gotk3/gtk"
 )
 
-func buttonpress(x, y int) func(*glib.CallbackContext) {
-	return func(ctx *glib.CallbackContext) {
-		arg := ctx.Args(0)
-		ev := *(**gdk.EventButton)(unsafe.Pointer(&arg))
-		switch ev.Button {
-		case 1: // left
-			if isConstant(x, y) {
-				return
-			}
-			addNotes(x, y)
-		case 3: // right
-			tryAgain()
-		}
+func focus(x, y int, eb *gtk.EventBox) {
+	if isConstant(x, y) {
+		return
 	}
+	eb.GrabFocus()
 }
 
-func keypress(x, y int) func(*glib.CallbackContext) {
-	return func(ctx *glib.CallbackContext) {
-		if isConstant(x, y) {
-			return
-		}
-		arg := ctx.Args(0)
-		ev := *(**gdk.EventKey)(unsafe.Pointer(&arg))
-		n := int(ev.Keyval) - '0'
-		if 1 <= n && n <= game.size {
-			updateCell(x, y, n)
-			return
-		}
-		n = decodeKey(uint(ev.Keyval))
-		switch n {
-		case -1:
-			return
-		case 0:
-			clearAll(x, y)
-		default:
-			if 1 <= n && n <= game.size {
-				updateNote(x, y, n)
-			}
-		}
+func keyPress(x, y int, w gtk.IWidget, e *gdk.Event) {
+	if isConstant(x, y) {
+		return
+	}
+	k := gdk.EventKeyNewFromEvent(e).KeyVal()
+	n := int(k - '0')
+	if 1 <= n && n <= size {
+		updateCell(x, y, n)
+		return
+	}
+	n, known := keycode[k]
+	if !known {
+		return
+	}
+	if n == 0 {
+		clearAll(x, y)
+		return
+	}
+	if 1 <= n && n <= size {
+		updateNote(x, y, n)
 	}
 }
 
 var keycode = map[uint]int{
-	'!':            1,
-	'@':            2,
-	'#':            3,
-	'$':            4,
-	'%':            5,
-	'^':            6,
-	'&':            7,
-	'*':            8,
-	'(':            9,
-	' ':            0,
-	gdk.KEY_Delete: 0,
+	gdk.KEY_BackSpace: 0,
+	gdk.KEY_Delete:    0,
+	' ':               0,
+	'!':               1,
+	'@':               2,
+	'#':               3,
+	'$':               4,
+	'%':               5,
+	'^':               6,
+	'&':               7,
+	'*':               8,
+	'(':               9,
 }
 
-func decodeKey(c uint) int {
-	n, known := keycode[c]
-	if !known {
-		return -1
+func buttonPress(x, y int, w gtk.IWidget, e *gdk.Event) {
+	switch gdk.EventButtonNewFromEvent(e).Button() {
+	case 1: // left
+		if isConstant(x, y) {
+			return
+		}
+		addNotes(x, y)
+	case 3: // right
+		tryAgain()
 	}
-	return n
 }

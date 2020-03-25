@@ -7,45 +7,47 @@ import (
 )
 
 var (
-	game struct {
-		size int
-		cell [][]int
-		note [][][]bool
-	}
+	size        int
+	cells       [][]int
+	notes       [][][]bool
+	noteStrings [][]string
 
 	autoPromote = true
 )
 
 func initGame() {
-	game.size = puzzle.Size()
-	game.cell = make([][]int, game.size)
-	game.note = make([][][]bool, game.size)
-	for y := 0; y < game.size; y++ {
-		game.cell[y] = make([]int, game.size)
-		game.note[y] = make([][]bool, game.size)
-		for x := 0; x < game.size; x++ {
+	size = puzzle.Size()
+	cells = make([][]int, size)
+	notes = make([][][]bool, size)
+	noteStrings = make([][]string, size)
+	for y := 0; y < size; y++ {
+		cells[y] = make([]int, size)
+		notes[y] = make([][]bool, size)
+		noteStrings[y] = make([]string, size)
+		for x := 0; x < size; x++ {
 			if isConstant(x, y) {
-				game.cell[y][x] = puzzle.Answer[y][x]
+				cells[y][x] = puzzle.Answer[y][x]
 			}
-			game.note[y][x] = make([]bool, game.size)
+			notes[y][x] = make([]bool, size)
 		}
 	}
 }
 
 func clueString(x, y int) string {
-	switch puzzle.Operation[y][x] {
+	op := puzzle.Operation[y][x]
+	switch op {
 	case kenken.None, kenken.Given:
 		return ""
 	default:
-		return fmt.Sprintf("%d %s", puzzle.Clue[y][x], puzzle.Operation[y][x].Symbol())
+		return fmt.Sprintf("%d %s", puzzle.Clue[y][x], op.Symbol())
 	}
 }
 
 func addNotes(x, y int) {
 	assertNonConstant(x, y)
-	for i := 1; i <= game.size; i++ {
-		if game.cell[y][x] == 0 && !inRowOrColumn(x, y, i) {
-			game.note[y][x][i-1] = true
+	for i := 1; i <= size; i++ {
+		if cells[y][x] == 0 && !inRowOrColumn(x, y, i) {
+			notes[y][x][i-1] = true
 		}
 	}
 	updateNoteLabel(x, y, true)
@@ -63,10 +65,10 @@ func assertNonConstant(x, y int) {
 
 func updateCell(x, y, n int) {
 	assertNonConstant(x, y)
-	game.cell[y][x] = n
-	setCellLabel(x, y, n)
+	cells[y][x] = n
 	clearNotes(x, y)
 	removeOtherNotes(x, y, n)
+	redraw(x, y)
 	done, correct := gameStatus()
 	if done {
 		if correct {
@@ -79,22 +81,21 @@ func updateCell(x, y, n int) {
 
 func clearNotes(x, y int) {
 	assertNonConstant(x, y)
-	for i := 1; i <= game.size; i++ {
-		game.note[y][x][i-1] = false
+	for i := 1; i <= size; i++ {
+		notes[y][x][i-1] = false
 	}
 	updateNoteLabel(x, y, false)
 }
 
 func clearAll(x, y int) {
 	assertNonConstant(x, y)
-	game.cell[y][x] = 0
-	clearCellLabel(x, y)
+	cells[y][x] = 0
 	clearNotes(x, y)
 }
 
 func removeOtherNotes(x, y, n int) {
 	assertNonConstant(x, y)
-	for i := 1; i <= game.size; i++ {
+	for i := 1; i <= size; i++ {
 		removeNote(i-1, y, n)
 		removeNote(x, i-1, n)
 	}
@@ -103,7 +104,7 @@ func removeOtherNotes(x, y, n int) {
 // For simplicity this can be called on constant cells too.
 func removeNote(x, y, n int) {
 	if !isConstant(x, y) {
-		game.note[y][x][n-1] = false
+		notes[y][x][n-1] = false
 		updateNoteLabel(x, y, true)
 	}
 }
@@ -112,16 +113,17 @@ func updateNote(x, y, n int) {
 	assertNonConstant(x, y)
 	// Don't allow note if the cell is already set,
 	// or if that value is already present in the row or column.
-	if game.cell[y][x] != 0 || inRowOrColumn(x, y, n) {
+	if cells[y][x] != 0 || inRowOrColumn(x, y, n) {
 		return
 	}
-	game.note[y][x][n-1] = !game.note[y][x][n-1]
+	notes[y][x][n-1] = !notes[y][x][n-1]
 	updateNoteLabel(x, y, false)
+	redraw(x, y)
 }
 
 func inRowOrColumn(x, y, n int) bool {
-	for i := 1; i <= game.size; i++ {
-		if game.cell[y][i-1] == n || game.cell[i-1][x] == n {
+	for i := 1; i <= size; i++ {
+		if cells[y][i-1] == n || cells[i-1][x] == n {
 			return true
 		}
 	}
@@ -130,12 +132,12 @@ func inRowOrColumn(x, y, n int) bool {
 
 func updateNoteLabel(x, y int, promote bool) {
 	assertNonConstant(x, y)
-	notes := ""
+	noteStr := ""
 	p := 0
 	count := 0
-	for i := 1; i <= game.size; i++ {
-		if game.note[y][x][i-1] {
-			notes += fmt.Sprintf("%d", i)
+	for i := 1; i <= size; i++ {
+		if notes[y][x][i-1] {
+			noteStr += fmt.Sprintf("%d", i)
 			p = i
 			count++
 		}
@@ -143,18 +145,19 @@ func updateNoteLabel(x, y int, promote bool) {
 	if autoPromote && count == 1 && promote {
 		updateCell(x, y, p)
 	} else {
-		setNoteLabel(x, y, notes)
+		noteStrings[y][x] = noteStr
 	}
+	redraw(x, y)
 }
 
 func gameStatus() (complete bool, correct bool) {
 	correct = true
-	for j := 0; j < game.size; j++ {
-		for i := 0; i < game.size; i++ {
-			if game.cell[j][i] == 0 {
+	for j := 0; j < size; j++ {
+		for i := 0; i < size; i++ {
+			if cells[j][i] == 0 {
 				return
 			}
-			if game.cell[j][i] != puzzle.Answer[j][i] {
+			if cells[j][i] != puzzle.Answer[j][i] {
 				correct = false
 			}
 		}
@@ -164,8 +167,8 @@ func gameStatus() (complete bool, correct bool) {
 }
 
 func restartGame() {
-	for y := 0; y < game.size; y++ {
-		for x := 0; x < game.size; x++ {
+	for y := 0; y < size; y++ {
+		for x := 0; x < size; x++ {
 			if !isConstant(x, y) {
 				clearAll(x, y)
 			}

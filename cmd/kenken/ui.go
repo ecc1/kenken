@@ -2,139 +2,148 @@ package main
 
 import (
 	"fmt"
-	"path/filepath"
 
-	"github.com/mattn/go-gtk/gdk"
-	"github.com/mattn/go-gtk/gtk"
+	"github.com/gotk3/gotk3/cairo"
+	"github.com/gotk3/gotk3/gdk"
+	"github.com/gotk3/gotk3/gtk"
 )
 
 const (
-	cellSize  = 100
-	lineWidth = 4
-	largeFont = "DejaVu Sans 28"
-	smallFont = "DejaVu Sans 12"
+	textFont = "Sans"
+
+	// These are relative to a unit-square cell size.
+	lineWidth     = 0.025
+	innerSep      = 0.050
+	largeFontSize = 0.400
+	// Must be small enough for "123456789" to fit in a cell.
+	smallFontSize = 0.160
 )
 
 var (
-	table     *gtk.Table
-	cellLabel [][]*gtk.Label
-	noteLabel [][]*gtk.Label
-
-	white = gdk.NewColor("white")
+	window   *gtk.Window
+	cellSize float64
+	grid     *gtk.Grid
 )
 
 func initUI() {
 	gtk.Init(nil)
-	size := puzzle.Size()
-	table = gtk.NewTable(uint(size), uint(size), true)
-	cellLabel = make([][]*gtk.Label, size)
-	noteLabel = make([][]*gtk.Label, size)
-	window := gtk.NewWindow(gtk.WINDOW_TOPLEVEL)
-	window.SetTitle(fmt.Sprintf("KenKen %s", filepath.Base(path)))
-	window.SetPosition(gtk.WIN_POS_CENTER_ALWAYS)
-	window.SetResizable(false)
+	window, _ = gtk.WindowNew(gtk.WINDOW_TOPLEVEL)
+	window.SetTitle(fmt.Sprintf("KenKen %s", title))
+	setGeometry(window)
 	window.Connect("destroy", gtk.MainQuit)
+	window.Connect("size-allocate", resize)
+	grid, _ = gtk.GridNew()
 	for y := 0; y < size; y++ {
-		cellLabel[y] = make([]*gtk.Label, size)
-		noteLabel[y] = make([]*gtk.Label, size)
 		for x := 0; x < size; x++ {
 			attachCell(x, y)
 		}
 	}
-	window.Add(table)
-	window.Connect("configure-event", drawCages)
-	window.Connect("expose-event", drawCages)
+	window.Add(grid)
 	window.ShowAll()
+}
+
+func setGeometry(win *gtk.Window) {
+	d, _ := win.GetScreen().GetDisplay()
+	m, _ := d.GetPrimaryMonitor()
+	r := m.GetGeometry()
+	sz := size * min(r.GetWidth(), r.GetHeight()) / 10
+	win.SetDefaultSize(sz, sz)
+	var g gdk.Geometry
+	g.SetMinAspect(1)
+	g.SetMaxAspect(1)
+	win.SetGeometryHints(nil, g, gdk.HINT_ASPECT)
+	win.SetPosition(gtk.WIN_POS_CENTER_ALWAYS)
+}
+
+func min(i, j int) int {
+	if i < j {
+		return i
+	}
+	return j
+}
+
+func attachCell(x, y int) {
+	d, _ := gtk.DrawingAreaNew()
+	d.SetHExpand(true)
+	d.SetVExpand(true)
+	d.Connect("draw", func(d *gtk.DrawingArea, c *cairo.Context) { drawCell(x, y, d, c) })
+	eb, _ := gtk.EventBoxNew()
+	eb.Add(d)
+	eb.SetCanFocus(true)
+	eb.Connect("enter-notify-event", func(eb *gtk.EventBox) { focus(x, y, eb) })
+	eb.Connect("key-press-event", func(eb *gtk.EventBox, e *gdk.Event) { keyPress(x, y, eb, e) })
+	eb.Connect("button-press-event", func(eb *gtk.EventBox, e *gdk.Event) { buttonPress(x, y, eb, e) })
+	grid.Attach(eb, x+1, y+1, 1, 1)
+}
+
+func drawCell(x, y int, d *gtk.DrawingArea, c *cairo.Context) {
+	sc, _ := d.GetStyleContext()
+	cv := sc.GetColor(gtk.STATE_FLAG_NORMAL).Floats()
+	c.SetSourceRGBA(cv[0], cv[1], cv[2], cv[3])
+	// Transform cell to unit square.
+	c.Scale(cellSize, cellSize)
+	// Cage lines.
+	c.SetLineWidth(lineWidth)
+	if x == 0 || puzzle.Vertical[y][x-1] {
+		c.MoveTo(0, 0)
+		c.LineTo(0, 1)
+	}
+	if x == size-1 {
+		c.MoveTo(1, 0)
+		c.LineTo(1, 1)
+	}
+	if y == 0 || puzzle.Horizontal[x][y-1] {
+		c.MoveTo(0, 0)
+		c.LineTo(1, 0)
+	}
+	if y == size-1 {
+		c.MoveTo(0, 1)
+		c.LineTo(1, 1)
+	}
+	c.Stroke()
+	// Answer.
+	c.SelectFontFace(textFont, cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+	c.SetFontSize(largeFontSize)
+	n := cells[y][x]
+	if n != 0 {
+		num := fmt.Sprintf("%d", n)
+		t := c.TextExtents(num)
+		c.MoveTo(0.5-t.Width/2, 0.5+t.Height/2)
+		c.ShowText(num)
+	}
+	if isConstant(x, y) {
+		return
+	}
+	// Clue.
+	c.SelectFontFace(textFont, cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+	c.SetFontSize(smallFontSize)
+	clue := clueString(x, y)
+	if clue != "" {
+		t := c.TextExtents(clue)
+		c.MoveTo(innerSep, innerSep+t.Height)
+		c.ShowText(clue)
+	}
+	// Notes.
+	noteStr := noteStrings[y][x]
+	if noteStr != "" {
+		t := c.TextExtents(noteStr)
+		c.MoveTo(1-innerSep-t.Width, 1-innerSep)
+		c.ShowText(noteStr)
+	}
+}
+
+func redraw(x, y int) {
+	w, _ := grid.GetChildAt(x+1, y+1)
+	w.QueueDraw()
+}
+
+func resize() {
+	a := grid.GetAllocation()
+	cellSize = float64(a.GetWidth()) / float64(size)
 }
 
 func runUI() {
 	gtk.Main()
-}
-
-func attachCell(x, y int) {
-	vbox := gtk.NewVBox(false, 0)
-	vbox.SetSizeRequest(cellSize, cellSize)
-
-	// Clue, if any
-	label := gtk.NewLabel(clueString(x, y))
-	label.ModifyFontEasy(smallFont)
-	align := gtk.NewAlignment(0, 0, 0, 0)
-	align.Add(label)
-	vbox.PackStart(align, false, false, 0)
-
-	// Cell contents
-	str := ""
-	if isConstant(x, y) {
-		str = fmt.Sprintf("%d", puzzle.Answer[y][x])
-	}
-	label = gtk.NewLabel(str)
-	cellLabel[y][x] = label
-	label.ModifyFontEasy(largeFont)
-	label.ModifyFG(gtk.STATE_INSENSITIVE, white)
-	vbox.Add(label)
-
-	// Notes
-	label = gtk.NewLabel("")
-	noteLabel[y][x] = label
-	label.ModifyFontEasy(smallFont)
-	align = gtk.NewAlignment(1, 0, 0, 0)
-	align.Add(label)
-	vbox.PackEnd(align, false, false, 0)
-
-	button := gtk.NewButton()
-	button.SetRelief(gtk.RELIEF_NONE)
-	if isConstant(x, y) {
-		button.SetSensitive(false)
-	}
-	button.Add(vbox)
-	button.Connect("enter-notify-event", button.GrabFocus)
-	button.Connect("expose-event", drawCages)
-	button.Connect("key-press-event", keypress(x, y))
-	button.Connect("button-press-event", buttonpress(x, y))
-
-	table.AttachDefaults(button, uint(x), uint(x+1), uint(y), uint(y+1))
-}
-
-func setCellLabel(x, y, n int) {
-	cellLabel[y][x].SetText(fmt.Sprintf("%d", n))
-}
-
-func clearCellLabel(x, y int) {
-	cellLabel[y][x].SetText("")
-}
-
-func setNoteLabel(x, y int, digits string) {
-	noteLabel[y][x].SetText(digits)
-}
-
-func drawCages() {
-	a := table.GetAllocation()
-	size := puzzle.Size()
-	w := a.Width / size
-	h := a.Height / size
-	d := table.GetWindow().GetDrawable()
-	gc := gdk.NewGC(d)
-	gc.SetRgbFgColor(white)
-
-	t := lineWidth
-
-	d.DrawRectangle(gc, true, 0, 0, t, a.Height)
-	d.DrawRectangle(gc, true, 0, 0, a.Width, t)
-	d.DrawRectangle(gc, true, 0, a.Height-t, a.Width, t)
-	d.DrawRectangle(gc, true, a.Width-t, 0, t, a.Height)
-
-	for j := 0; j < size; j++ {
-		y := j*h - t/2
-		for i := 0; i < size; i++ {
-			x := i*w - t/2
-			if i > 0 && puzzle.Vertical[j][i-1] {
-				d.DrawRectangle(gc, true, x, y, t, h+t/2)
-			}
-			if j > 0 && puzzle.Horizontal[i][j-1] {
-				d.DrawRectangle(gc, true, x, y, w+t/2, t)
-			}
-		}
-	}
 }
 
 var winning = false
@@ -144,12 +153,11 @@ func winnerWinner() {
 		return
 	}
 	winning = true
-	dialog := gtk.NewMessageDialogWithMarkup(
-		table.GetTopLevelAsWindow(), gtk.DIALOG_MODAL,
-		gtk.MESSAGE_INFO, gtk.BUTTONS_OK, "<b>Correct!</b>",
-	)
-	dialog.Response(gtk.MainQuit)
+	dialog := gtk.MessageDialogNewWithMarkup(window, gtk.DIALOG_MODAL, gtk.MESSAGE_INFO, gtk.BUTTONS_OK, "")
+	dialog.SetMarkup("<b>Correct!</b>")
 	dialog.Run()
+	dialog.Destroy()
+	gtk.MainQuit()
 }
 
 var losing = false
@@ -159,10 +167,8 @@ func tryAgain() {
 		return
 	}
 	losing = true
-	dialog := gtk.NewMessageDialogWithMarkup(
-		table.GetTopLevelAsWindow(), gtk.DIALOG_MODAL,
-		gtk.MESSAGE_WARNING, gtk.BUTTONS_YES_NO, "<b>Try again?</b>",
-	)
+	dialog := gtk.MessageDialogNewWithMarkup(window, gtk.DIALOG_MODAL, gtk.MESSAGE_WARNING, gtk.BUTTONS_YES_NO, "")
+	dialog.SetMarkup("<b>Try again?</b>")
 	if dialog.Run() == gtk.RESPONSE_YES {
 		restartGame()
 	}
