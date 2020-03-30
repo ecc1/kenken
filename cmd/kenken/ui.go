@@ -20,9 +20,8 @@ const (
 )
 
 var (
-	window   *gtk.Window
-	cellSize float64
-	grid     *gtk.Grid
+	window *gtk.Window
+	grid   *gtk.Grid
 )
 
 func initUI() {
@@ -31,14 +30,7 @@ func initUI() {
 	window.SetTitle(fmt.Sprintf("KenKen %s", title))
 	setGeometry(window)
 	window.Connect("destroy", gtk.MainQuit)
-	window.Connect("size-allocate", resize)
-	grid, _ = gtk.GridNew()
-	for y := 0; y < size; y++ {
-		for x := 0; x < size; x++ {
-			attachCell(x, y)
-		}
-	}
-	window.Add(grid)
+	window.Add(makeGrid())
 	window.ShowAll()
 }
 
@@ -52,7 +44,7 @@ func setGeometry(win *gtk.Window) {
 	g.SetMinAspect(1)
 	g.SetMaxAspect(1)
 	win.SetGeometryHints(nil, g, gdk.HINT_ASPECT)
-	win.SetPosition(gtk.WIN_POS_CENTER_ALWAYS)
+	win.SetPosition(gtk.WIN_POS_MOUSE)
 }
 
 func min(i, j int) int {
@@ -60,6 +52,20 @@ func min(i, j int) int {
 		return i
 	}
 	return j
+}
+
+func makeGrid() gtk.IWidget {
+	grid, _ = gtk.GridNew()
+	grid.SetRowHomogeneous(true)
+	grid.SetColumnHomogeneous(true)
+	for y := 0; y < size; y++ {
+		for x := 0; x < size; x++ {
+			attachCell(x, y)
+		}
+	}
+	a, _ := gtk.AspectFrameNew("", 0.5, 0.5, 1, false)
+	a.Add(grid)
+	return a
 }
 
 func attachCell(x, y int) {
@@ -81,6 +87,7 @@ func drawCell(x, y int, d *gtk.DrawingArea, c *cairo.Context) {
 	cv := sc.GetColor(gtk.STATE_FLAG_NORMAL).Floats()
 	c.SetSourceRGBA(cv[0], cv[1], cv[2], cv[3])
 	// Transform cell to unit square.
+	cellSize := float64(d.GetAllocatedWidth())
 	c.Scale(cellSize, cellSize)
 	// Cage lines.
 	c.SetLineWidth(lineWidth)
@@ -135,11 +142,6 @@ func drawCell(x, y int, d *gtk.DrawingArea, c *cairo.Context) {
 func redraw(x, y int) {
 	w, _ := grid.GetChildAt(x+1, y+1)
 	w.QueueDraw()
-}
-
-func resize() {
-	a := grid.GetAllocation()
-	cellSize = float64(a.GetWidth()) / float64(size)
 }
 
 func runUI() {
