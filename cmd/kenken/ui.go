@@ -141,7 +141,7 @@ func drawCell(x, y int, d *gtk.DrawingArea, c *cairo.Context) {
 
 func redraw(x, y int) {
 	w, _ := grid.GetChildAt(x+1, y+1)
-	w.QueueDraw()
+	w.ToWidget().QueueDraw()
 }
 
 func runUI() {
