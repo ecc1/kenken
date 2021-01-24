@@ -6,13 +6,15 @@ import (
 	"github.com/ecc1/kenken"
 )
 
+const (
+	autoPromote = true
+)
+
 var (
 	size        int
 	cells       [][]int
 	notes       [][][]bool
 	noteStrings [][]string
-
-	autoPromote = true
 )
 
 func initGame() {
