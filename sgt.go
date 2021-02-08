@@ -320,7 +320,7 @@ func sgtPuzzle() (*Puzzle, string, error) {
 	if err != nil {
 		return nil, id, fmt.Errorf("%s: %w", solvePuzzle, err)
 	}
-	k, err := ReadSGT(id, string(soln))
+	k, err := ReadSGT(id, string(bytes.TrimSpace(soln)))
 	if err != nil {
 		log.Printf("puzzle encoding: %s", id)
 		log.Printf("puzzle solution:\n%s", soln)
@@ -351,5 +351,5 @@ func sgtPuzzleID() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", genPuzzle, err)
 	}
-	return strings.TrimSpace(string(result)), nil
+	return string(bytes.TrimSpace(result)), nil
 }
