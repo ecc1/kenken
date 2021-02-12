@@ -16,38 +16,41 @@ func keyPress(x, y int, w gtk.IWidget, e *gdk.Event) {
 	if isConstant(x, y) {
 		return
 	}
-	k := gdk.EventKeyNewFromEvent(e).KeyVal()
-	n := int(k - '0')
-	if 1 <= n && n <= size {
-		updateCell(x, y, n)
-		return
-	}
+	ek := gdk.EventKeyNewFromEvent(e)
+	k := ek.KeyVal()
 	n, known := keycode[k]
 	if !known {
 		return
 	}
+	// Space/backspace/delete: clear cell.
 	if n == 0 {
 		clearAll(x, y)
 		return
 	}
-	if 1 <= n && n <= size {
-		updateNote(x, y, n)
+	if n > size {
+		return
 	}
+	if ek.State() != 0 {
+		// Modified number key (control or shift): update notes.
+		updateNote(x, y, n)
+		return
+	}
+	// Unmodified number key: update cell.
+	updateCell(x, y, n)
 }
 
 var keycode = map[uint]int{
-	gdk.KEY_BackSpace: 0,
-	gdk.KEY_Delete:    0,
-	' ':               0,
-	'!':               1,
-	'@':               2,
-	'#':               3,
-	'$':               4,
-	'%':               5,
-	'^':               6,
-	'&':               7,
-	'*':               8,
-	'(':               9,
+	' ': 0, gdk.KEY_BackSpace: 0, gdk.KEY_Delete: 0,
+	// Sorry, this is specific to US keyboard layouts.
+	'1': 1, '!': 1,
+	'2': 2, '@': 2,
+	'3': 3, '#': 3,
+	'4': 4, '$': 4,
+	'5': 5, '%': 5,
+	'6': 6, '^': 6,
+	'7': 7, '&': 7,
+	'8': 8, '*': 8,
+	'9': 9, '(': 9,
 }
 
 func buttonPress(x, y int, w gtk.IWidget, e *gdk.Event) {
