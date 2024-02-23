@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	textFont = "Sans"
+	textFont = "DejaVu Sans"
 
 	// These are relative to a unit-square cell size.
 	lineWidth     = 0.025
@@ -36,15 +36,15 @@ func initUI() {
 
 func setGeometry(win *gtk.Window) {
 	d, _ := win.GetScreen().GetDisplay()
-	m, _ := d.GetPrimaryMonitor()
+	m, _ := d.GetMonitor(0)
 	r := m.GetGeometry()
 	sz := size * min(r.GetWidth(), r.GetHeight()) / 10
-	win.SetDefaultSize(sz, sz)
 	var g gdk.Geometry
 	g.SetMinAspect(1)
 	g.SetMaxAspect(1)
 	win.SetGeometryHints(nil, g, gdk.HINT_ASPECT)
 	win.SetPosition(gtk.WIN_POS_MOUSE)
+	win.SetDefaultSize(sz, sz)
 }
 
 func min(i, j int) int {

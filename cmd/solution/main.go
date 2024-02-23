@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	textFont = "Sans"
+	textFont = "DejaVu Sans"
 
 	// These are relative to a unit-square cell size.
 	lineWidth     = 0.025
