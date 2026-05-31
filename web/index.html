@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+		<title>KenKen</title>
+		<link rel="stylesheet" href="style.css" />
+	</head>
+	<body>
+		<div id="app">
+			<header id="topbar">
+				<h1>KenKen</h1>
+				<div class="toolbar">
+					<label class="key file-label">
+						Open file
+						<input id="file-input" type="file" accept=".txt,text/plain" hidden />
+					</label>
+					<button id="demo-btn" class="key" type="button">Demo</button>
+				</div>
+			</header>
+
+			<main id="main">
+				<div id="board-wrap">
+					<canvas id="board" width="480" height="480"></canvas>
+				</div>
+
+				<div id="controls">
+					<div id="digits" class="digits"></div>
+					<div class="actions">
+						<button id="notes-toggle" class="key" type="button">Notes</button>
+						<button id="candidates-btn" class="key" type="button">Candidates</button>
+						<button id="clear-btn" class="key" type="button">Clear</button>
+						<button id="restart-btn" class="key" type="button">Restart</button>
+					</div>
+				</div>
+			</main>
+
+			<footer>
+				<p id="status" class="status"></p>
+				<p class="hint">
+					Tap a cell, then a number. <strong>Notes</strong> toggles pencil marks
+					(or hold Shift/Ctrl with a number key). <strong>Candidates</strong>
+					fills in all still-possible numbers. Right-click the board to restart.
+				</p>
+			</footer>
+		</div>
+		<script src="app.js"></script>
+	</body>
+</html>
