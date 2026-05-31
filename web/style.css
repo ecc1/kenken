@@ -1,10 +1,31 @@
 :root {
+	color-scheme: light dark;
 	--bg: #f4f4f4;
 	--panel: #ffffff;
 	--ink: #222222;
 	--line: #cccccc;
 	--accent: #2b6cb0;
 	--accent-ink: #ffffff;
+	--board-bg: #ffffff;
+	--key-active: #e8e8e8;
+	--muted: #5e5e5e;
+	--error: #c0392b;
+}
+
+/* Dark theme: mirror the canvas palette in app.ts palette(true). */
+@media (prefers-color-scheme: dark) {
+	:root {
+		--bg: #161616;
+		--panel: #262626;
+		--ink: #e6e6e6;
+		--line: #444444;
+		--accent: #4a90d9;
+		--accent-ink: #ffffff;
+		--board-bg: #1e1e1e;
+		--key-active: #3a3a3a;
+		--muted: #a0a0a0;
+		--error: #ef6f63;
+	}
 }
 
 * {
@@ -76,7 +97,7 @@ body {
 }
 
 #board {
-	background: #fff;
+	background: var(--board-bg);
 	touch-action: manipulation;
 	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 }
@@ -122,7 +143,7 @@ body {
 }
 
 .key:active {
-	background: #e8e8e8;
+	background: var(--key-active);
 }
 
 .key.digit {
@@ -144,7 +165,7 @@ body {
 footer {
 	flex: 0 0 auto;
 	font-size: 0.85rem;
-	color: #555;
+	color: var(--muted);
 }
 
 footer p {
@@ -157,11 +178,11 @@ footer p {
 }
 
 .status.error {
-	color: #c0392b;
+	color: var(--error);
 }
 
 .hint {
-	color: #666;
+	color: var(--muted);
 }
 
 /* Landscape on wider screens: board beside the controls. */

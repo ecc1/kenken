@@ -450,9 +450,36 @@ const largeFontSize = 0.4;
 const smallFontSize = 0.16;
 const textFont = '"DejaVu Sans", sans-serif';
 
+// Canvas colors aren't styleable through CSS, so the renderer carries its own
+// palette.  It mirrors the light/dark page chrome in style.css and is selected
+// from the system theme via prefers-color-scheme.
+interface Palette {
+	bg: string; // board background
+	ink: string; // lines, digits, clues, notes
+	selNormal: string; // selected-cell highlight (answer mode)
+	selNotes: string; // selected-cell highlight (notes mode)
+}
+
+function palette(dark: boolean): Palette {
+	return dark
+		? { bg: "#1e1e1e", ink: "#e6e6e6", selNormal: "#2c4a66", selNotes: "#5c4a22" }
+		: { bg: "#ffffff", ink: "#1a1a1a", selNormal: "#cfe8ff", selNotes: "#ffe7b3" };
+}
+
+// prefersDark reports the current system theme, defensively so the module can
+// load in a non-browser context (e.g. the test harness) without a window.
+function prefersDark(): boolean {
+	return (
+		typeof window !== "undefined" &&
+		typeof window.matchMedia === "function" &&
+		window.matchMedia("(prefers-color-scheme: dark)").matches
+	);
+}
+
 class Renderer {
 	private ctx: CanvasRenderingContext2D;
 	private boardPx = 0;
+	private colors: Palette = palette(prefersDark());
 	cellSize = 0; // CSS pixels per cell
 
 	constructor(
@@ -465,6 +492,12 @@ class Renderer {
 			throw new Error("2d canvas context unavailable");
 		}
 		this.ctx = ctx;
+	}
+
+	// setDark switches the palette for a system theme change.  The caller
+	// schedules the redraw.
+	setDark(dark: boolean): void {
+		this.colors = palette(dark);
 	}
 
 	layout(): void {
@@ -493,12 +526,12 @@ class Renderer {
 		const ctx = this.ctx;
 		const g = this.game;
 		ctx.clearRect(0, 0, this.boardPx, this.boardPx);
-		ctx.fillStyle = "#ffffff";
+		ctx.fillStyle = this.colors.bg;
 		ctx.fillRect(0, 0, this.boardPx, this.boardPx);
 		// Selection highlight (no GTK equivalent; needed without per-cell focus).
 		const sel = g.selected;
 		if (sel) {
-			ctx.fillStyle = g.notesMode ? "#ffe7b3" : "#cfe8ff";
+			ctx.fillStyle = g.notesMode ? this.colors.selNotes : this.colors.selNormal;
 			ctx.fillRect(sel.x * this.cellSize, sel.y * this.cellSize, this.cellSize, this.cellSize);
 		}
 		for (let y = 0; y < g.size; y++) {
@@ -515,8 +548,8 @@ class Renderer {
 		const cs = this.cellSize;
 		const ox = x * cs;
 		const oy = y * cs;
-		ctx.strokeStyle = "#000000";
-		ctx.fillStyle = "#000000";
+		ctx.strokeStyle = this.colors.ink;
+		ctx.fillStyle = this.colors.ink;
 		ctx.lineWidth = lineWidth * cs;
 		ctx.lineCap = "square";
 		// Cage lines (same conditionals as ui.go, including the H transpose).
@@ -831,6 +864,14 @@ function init(): void {
 		}
 	});
 
+	// Follow live system theme changes (CSS handles the chrome; the canvas
+	// palette has to be repainted explicitly).
+	const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+	darkQuery.addEventListener("change", (e) => {
+		renderer?.setDark(e.matches);
+		scheduleDraw();
+	});
+
 	setStatus("Open a downloaded KenKen .txt file, or try the demo.", false);
 }
 
@@ -873,8 +914,11 @@ H
 0 1 1 1 0
 `;
 
-if (document.readyState === "loading") {
-	document.addEventListener("DOMContentLoaded", init);
-} else {
-	init();
+// Guard auto-init so the module can be loaded for testing without a DOM.
+if (typeof document !== "undefined") {
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", init);
+	} else {
+		init();
+	}
 }

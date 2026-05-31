@@ -34,6 +34,13 @@ changing `app.ts`, recompile:
 tsc -p tsconfig.json
 ```
 
+Logic is covered by dependency-free tests (Node's built-in runner). `npm test`
+recompiles and runs them:
+
+```sh
+npm test
+```
+
 ## Out of scope
 
 Puzzle *generation* (the `sgt-keen`/`keensolver` binaries used by the Go default
