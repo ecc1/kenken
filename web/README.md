@@ -1,5 +1,7 @@
 # KenKen in the browser
 
+**[▶ Play it now](https://ecc1.github.io/kenken/web/)**
+
 A static, dependency-free browser version of the GTK app in
 [`../cmd/kenken`](../cmd/kenken). It plays puzzles in the same `A/T/S/V/H` text
 format read by [`../read.go`](../read.go) — the files downloaded by
@@ -7,7 +9,8 @@ format read by [`../read.go`](../read.go) — the files downloaded by
 
 ## Running
 
-Just open `index.html` in a browser — no server or build step required. Then:
+Open the [live demo](https://ecc1.github.io/kenken/web/) or clone and open
+`index.html` in a browser — no server or build step required. Then:
 
 - **Open file** to load a downloaded puzzle `.txt`, or drag-and-drop it onto the
   page (or click **Demo** for a bundled 6×6).
